@@ -23,23 +23,35 @@ func main() {
 	}
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		dividend, divider, err := handleParams(r)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
+		if len(r.URL.Query()) == 0 {
+			data := map[string]string{
+				"Region":   os.Getenv("FLY_REGION"),
+			}
+			if err := t.ExecuteTemplate(w, "index.html.tmpl", data); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+		} else {
+			dividend, divider, err := handleParams(r)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
+			}
+			quotient, err := divide(dividend, divider)
+			if err != nil {
+				http.Error(w, fmt.Errorf("error during dividing: %w", err).Error(), http.StatusBadRequest)
+				return
+			}
+			data := map[string]string{
+				"Region":   os.Getenv("FLY_REGION"),
+				"Quotient": fmt.Sprintf("%d", quotient),
+			}
+			if err := t.ExecuteTemplate(w, "index.html.tmpl", data); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 		}
-		quotient, err := divide(dividend, divider)
-		if err != nil {
-			http.Error(w, fmt.Errorf("error during dividing: %w", err).Error(), http.StatusBadRequest)
-			return
-		}
-		data := map[string]string{
-			"Region":   os.Getenv("FLY_REGION"),
-			"Quotient": fmt.Sprintf("%d", quotient),
-		}
-		t.ExecuteTemplate(w, "index.html.tmpl", data)
 	})
-
 	log.Println("listening on", port)
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Println("Error starting server:", err)
