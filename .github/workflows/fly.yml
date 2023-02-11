@@ -1,9 +1,8 @@
 name: Fly Deploy
 on:
-  workflow_run:
+  push:
     branches:
       - main
-    types: [ tests ]
 env:
   FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
 jobs:
